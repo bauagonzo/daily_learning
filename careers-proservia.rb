@@ -13,8 +13,8 @@ rescue Errno::ENOENT
   jobs = []
 end
 
-url = "https://recrutement.proservia.fr/public/index.php?a=annonce"
-uri = URI.parse(url)
+url = "https://recrutement.proservia.fr/public/index.php"
+uri = URI.parse("#{url}?a=annonce")
 request = Net::HTTP::Post.new(uri)
 request.set_form_data(
     "a" => "annonce",
@@ -28,8 +28,13 @@ end
 html_doc = Nokogiri::HTML(response.body)
 
 html_doc.css(".listcv [class*='row']").each do |j|
+  #ap j['onclick'].values
   x = j.css('td')
-  job = { date: x[0].text, title: x[1].text, location: x[2].text }
+  job = { date: x[0].text, 
+          title: x[1].text,
+          location: x[2].text,
+          link: "#{url + j['onclick'][/(a=.*\d)/]}"
+        }
   unless jobs.include?(job)
     print "🌟"
     jobs << job
