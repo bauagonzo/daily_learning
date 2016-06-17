@@ -53,13 +53,8 @@ end
 html_doc = Nokogiri::HTML(response.body)
 
 html_doc.css(".listcv [class*='row']").each do |j|
-  x = j.css('td')
-  job = { date: x[0].text,
-          title: x[1].text,
-          location: x[2].text,
-          link: "#{@url + j['onclick'][/(a=.*\d)/]}"
-  }
-
+  job=%i{date title location}.zip(j.css('td').map(&:text)).to_h
+  job[:link] = "#{@url + j['onclick'][/(a=.*\d)/]}"
   job[:new] = true unless @jobs.include?(job)
   @jobs << job
 end
