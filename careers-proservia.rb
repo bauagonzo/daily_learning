@@ -5,6 +5,7 @@ require 'nokogiri'
 require 'yaml'
 require 'optparse'
 require 'awesome_print'
+require 'pry'
 
 options = {}
 op = OptionParser.new do |opts|
@@ -15,6 +16,9 @@ op = OptionParser.new do |opts|
   end
   opts.on("-a", "--[no-]all", "Display all announces") do |a|
     options[:print_all] = a
+  end
+  opts.on("-i", "--[no-]interactive", "Launch interactive session") do |i|
+    options[:interactive] = i
   end
 end
 
@@ -27,10 +31,11 @@ end
 
 @cache = options[:cache].nil? ? File.dirname(__FILE__) + "/.#{File.basename($0,'.rb')}.jobs.cache" : options[:cache]
 begin
-  jobs = YAML::load(File.open(@cache))
-  jobs = [] unless jobs.is_a?(Array)   # Be sure file is not corrupted
+  @jobs = YAML::load(File.open(@cache))
+  @jobs = [] unless @jobs.is_a?(Array)   # Be sure file is not corrupted
+  @jobs.select { |j| j[:new] }.each { |x| x.delete(:new) }
 rescue Errno::ENOENT
-  jobs = []
+  @jobs = []
 end
 
 @url = "https://recrutement.proservia.fr/public/index.php"
@@ -55,13 +60,16 @@ html_doc.css(".listcv [class*='row']").each do |j|
           link: "#{@url + j['onclick'][/(a=.*\d)/]}"
   }
 
-  if not jobs.include?(job)
-    print "🌟"
-    ap job
-    jobs << job
-  elsif options[:print_all]
-    ap job
-  end
-
+  job[:new] = true unless @jobs.include?(job)
+  @jobs << job
 end
-File.open(@cache, 'w') { |f| f.write(YAML.dump(jobs)) }
+
+if options[:print_all]
+  ap @jobs
+else
+  ap @jobs.select { |x| x[:new] }
+end
+
+File.open(@cache, 'w') { |f| f.write(YAML.dump(@jobs)) }
+
+Pry.start if options[:interactive]

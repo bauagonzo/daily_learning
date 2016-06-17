@@ -5,6 +5,7 @@ require 'nokogiri'
 require 'yaml'
 require 'optparse'
 require 'awesome_print'
+require 'pry'
 
 
 options = {}
@@ -29,10 +30,11 @@ end
 @cache = options[:cache].nil? ? File.dirname(__FILE__) + "/.#{File.basename($0,'.rb')}.jobs.cache" : options[:cache]
 
 begin
-  jobs = YAML::load(File.open(@cache))
-  jobs = [] unless jobs.is_a?(Array)   # Be sure file is not corrupted
+  @jobs = YAML::load(File.open(@cache))
+  @jobs = [] unless @jobs.is_a?(Array)   # Be sure file is not corrupted
+  @jobs.select { |j| j[:new] }.each { |x| x.delete(:new) }
 rescue Errno::ENOENT
-  jobs = []
+  @jobs = []
 end
 
 @url = 'https://www.ovh.com/fr/careers/offres/resultats.xml?region=Nord-Pas+de+Calais'
@@ -50,13 +52,17 @@ end
       title: j.text,
       link: j['href']
     }
-    if not jobs.include?(job)
-      print "🌟"
-      ap job
-      jobs << job
-    elsif options[:print_all]
-      ap job
-    end
+    job[:new] = true unless @jobs.include?(job)
+    @jobs << job
   end
 end
-File.open(@cache, 'w') {|f| f.write(YAML.dump(jobs)) }
+
+if options[:print_all]
+  ap @jobs
+else
+  ap @jobs.select { |x| x[:new] }
+end
+
+File.open(@cache, 'w') {|f| f.write(YAML.dump(@jobs)) }
+
+Pry.start if options[:interactive]
