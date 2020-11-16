@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/bin/bash
 TMPDIR=${TMPDIR:-/tmp}
 cd $TMPDIR
 curl -LOk https://github.com/tldr-pages/tldr/archive/master.zip
